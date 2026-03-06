@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#2D6A4F">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Tarefas">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Tarefas da Semana</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --mp: #2D6A4F;
+    --mp-light: #D8F3DC;
+    --mp-mid: #74C69D;
+    --mm: #1D3557;
+    --mm-light: #D6E8FF;
+    --mm-mid: #7EB8F7;
+    --bg: #F7F4EF;
+    --card: #FFFFFF;
+    --text: #1a1a1a;
+    --muted: #888;
+    --border: #E8E2D9;
+    --danger: #C0392B;
+    --danger-light: #FDECEA;
+    --easy: #2D6A4F;
+    --easy-bg: #D8F3DC;
+    --medium: #7B5C00;
+    --medium-bg: #FFF3CD;
+    --hard: #8B2500;
+    --hard-bg: #FFE4D6;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bot: env(safe-area-inset-bottom, 0px);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: calc(32px + var(--safe-top)) 16px calc(80px + var(--safe-bot));
+    overscroll-behavior: none;
+  }
+
+  header { text-align: center; margin-bottom: 28px; }
+
+  header h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(1.8rem, 6vw, 3.2rem);
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+  }
+
+  header h1 em { font-style: italic; color: var(--mp); }
+  header p { font-size: 0.82rem; color: var(--muted); margin-top: 6px; font-weight: 300; }
+
+  /* Install banner */
+  #installBanner {
+    display: none;
+    align-items: center;
+    gap: 12px;
+    background: var(--mp);
+    color: white;
+    border-radius: 14px;
+    padding: 14px 18px;
+    margin: 0 auto 24px;
+    max-width: 500px;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(45,106,79,0.3);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 4px 16px rgba(45,106,79,0.3); }
+    50%       { box-shadow: 0 4px 24px rgba(45,106,79,0.5); }
+  }
+
+  #installBanner.show { display: flex; }
+
+  .install-icon { font-size: 1.6rem; flex-shrink: 0; }
+
+  .install-text { flex: 1; }
+  .install-text strong { display: block; font-size: 0.9rem; font-weight: 600; }
+  .install-text span   { font-size: 0.78rem; opacity: 0.85; }
+
+  .install-btn {
+    background: white;
+    color: var(--mp);
+    border: none;
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    white-space: nowrap;
+  }
+
+  /* iOS install hint */
+  #iosHint {
+    display: none;
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--mp);
+    background: var(--mp-light);
+    border: 1px solid var(--mp-mid);
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin: 0 auto 24px;
+    max-width: 500px;
+    line-height: 1.5;
+  }
+
+  #iosHint.show { display: block; }
+
+  /* Weekly banner */
+  .weekly-banner {
+    display: flex;
+    justify-content: center;
+    margin: 0 auto 28px;
+    max-width: 500px;
+  }
+
+  .weekly-card {
+    background: var(--mp-light);
+    border: 1px solid var(--mp-mid);
+    border-radius: 14px;
+    padding: 12px 24px;
+    text-align: center;
+    width: 100%;
+  }
+
+  .wc-label {
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--mp);
+    margin-bottom: 4px;
+  }
+
+  .wc-score {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.3rem;
+    line-height: 1.2;
+  }
+
+  .bal-ok   { color: var(--mp); }
+  .bal-warn { color: var(--medium); }
+  .bal-off  { color: var(--hard); }
+
+  /* Reset button */
+  .reset-row {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 24px;
+  }
+
+  .btn-reset {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.75rem;
+    color: var(--muted);
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 5px 14px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .btn-reset:hover { background: var(--border); }
+
+  /* Legend */
+  .legend-bar {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 28px;
+  }
+
+  .legend-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 0.78rem;
+    font-weight: 500;
+  }
+
+  .legend-sep { width: 1px; height: 14px; background: var(--border); }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .dot-mp { background: var(--mp); }
+  .dot-mm { background: var(--mm); }
+
+  .diff-badge {
+    font-size: 0.63rem;
+    font-weight: 700;
+    padding: 1px 7px;
+    border-radius: 10px;
+    letter-spacing: 0.3px;
+  }
+
+  .diff-easy   { background: var(--easy-bg);   color: var(--easy); }
+  .diff-medium { background: var(--medium-bg);  color: var(--medium); }
+  .diff-hard   { background: var(--hard-bg);    color: var(--hard); }
+
+  /* Grid */
+  .week-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .day-card {
+    background: var(--card);
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  @media (hover: hover) {
+    .day-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    }
+  }
+
+  .day-header {
+    padding: 13px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .day-name { font-family: 'DM Serif Display', serif; font-size: 1.15rem; }
+
+  .weekend-badge {
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #b5460b;
+    background: #FFF0E8;
+    border-radius: 6px;
+    padding: 2px 6px;
+    margin-left: 6px;
+  }
+
+  .day-pills { display: flex; gap: 5px; }
+
+  .count-pill {
+    font-size: 0.66rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 20px;
+  }
+
+  .pill-mp { background: var(--mp-light); color: var(--mp); }
+  .pill-mm { background: var(--mm-light); color: var(--mm); }
+
+  /* Progress within header pill — shows completion */
+  .count-pill.done-all { opacity: 0.5; text-decoration: line-through; }
+
+  .tasks-list { padding: 6px 0; }
+
+  .section-label {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--muted);
+    font-weight: 600;
+    padding: 8px 18px 3px;
+  }
+
+  .divider { height: 1px; background: var(--border); margin: 5px 18px; }
+
+  .task-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 9px 18px;
+    transition: background 0.15s;
+    position: relative;
+    cursor: pointer;
+    /* bigger tap target on mobile */
+    min-height: 44px;
+  }
+
+  .task-item:active { background: rgba(0,0,0,0.04); }
+
+  @media (hover: hover) {
+    .task-item:hover { background: rgba(0,0,0,0.025); }
+    .task-item:hover .btn-delete { opacity: 1; }
+  }
+
+  /* On touch devices show delete always (small) */
+  @media (hover: none) {
+    .btn-delete { opacity: 0.35 !important; }
+  }
+
+  .task-item.done .task-text { text-decoration: line-through; opacity: 0.38; }
+  .task-item.done .task-check { opacity: 0.4; }
+
+  .task-check {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid;
+    flex-shrink: 0;
+    margin-top: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: white;
+    transition: background 0.2s;
+  }
+
+  .task-item.mp .task-check { border-color: var(--mp); }
+  .task-item.mm .task-check { border-color: var(--mm); }
+  .task-item.mp.done .task-check { background: var(--mp); }
+  .task-item.mm.done .task-check { background: var(--mm); }
+
+  .task-content { flex: 1; min-width: 0; }
+
+  .task-text { font-size: 0.875rem; line-height: 1.4; color: var(--text); word-break: break-word; }
+
+  .task-meta { display: flex; align-items: center; gap: 5px; margin-top: 3px; }
+
+  .task-owner { font-size: 0.63rem; font-weight: 700; letter-spacing: 0.5px; }
+  .task-item.mp .task-owner { color: var(--mp); }
+  .task-item.mm .task-owner { color: var(--mm); }
+
+  .btn-delete {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: none;
+    background: var(--danger-light);
+    color: var(--danger);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.15s;
+    flex-shrink: 0;
+    margin-top: 0;
+    align-self: center;
+  }
+
+  /* Add form */
+  .add-task-row { padding: 8px 18px 6px; }
+
+  .btn-add-toggle {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--muted);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px 0;
+    min-height: 36px;
+    transition: color 0.15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .btn-add-toggle:active { color: var(--text); }
+
+  .btn-add-toggle .plus {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 1.5px dashed currentColor;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+  }
+
+  .add-form {
+    display: none;
+    flex-direction: column;
+    gap: 9px;
+    padding: 12px 18px 14px;
+    background: #FAFAF8;
+    border-top: 1px solid var(--border);
+    animation: slideDown 0.18s ease;
+  }
+
+  .add-form.open { display: flex; }
+
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-5px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .add-form input[type="text"] {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    color: var(--text);
+    background: white;
+    outline: none;
+    transition: border-color 0.2s;
+    /* prevent zoom on iOS */
+    font-size: 16px;
+  }
+
+  .add-form input[type="text"]:focus { border-color: var(--mp); }
+
+  .add-form-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .owner-select, .diff-select { display: flex; gap: 5px; }
+
+  .owner-btn, .diff-btn {
+    padding: 6px 12px;
+    border-radius: 20px;
+    border: 2px solid transparent;
+    font-size: 0.73rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif;
+    min-height: 34px;
+  }
+
+  .owner-btn.mp { background: var(--mp-light); color: var(--mp); border-color: var(--mp-light); }
+  .owner-btn.mm { background: var(--mm-light); color: var(--mm); border-color: var(--mm-light); }
+  .owner-btn.mp.selected { border-color: var(--mp); }
+  .owner-btn.mm.selected { border-color: var(--mm); }
+
+  .diff-btn.easy   { background: var(--easy-bg);  color: var(--easy);   border-color: var(--easy-bg); }
+  .diff-btn.medium { background: var(--medium-bg); color: var(--medium); border-color: var(--medium-bg); }
+  .diff-btn.hard   { background: var(--hard-bg);   color: var(--hard);   border-color: var(--hard-bg); }
+  .diff-btn.easy.selected   { border-color: var(--easy); }
+  .diff-btn.medium.selected { border-color: var(--medium); }
+  .diff-btn.hard.selected   { border-color: var(--hard); }
+
+  .form-actions { display: flex; gap: 7px; justify-content: flex-end; }
+
+  .btn-confirm {
+    padding: 8px 18px;
+    border-radius: 8px;
+    border: none;
+    background: var(--mp);
+    color: white;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    min-height: 40px;
+  }
+
+  .btn-cancel {
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    min-height: 40px;
+  }
+
+  /* Footer */
+  .day-footer {
+    padding: 9px 18px 13px;
+    border-top: 1px solid var(--border);
+  }
+
+  .balance-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+
+  .balance-label { font-size: 0.66rem; color: var(--muted); font-weight: 500; }
+
+  .balance-chip {
+    font-size: 0.6rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 20px;
+  }
+
+  .bc-ok   { background: #D8F3DC; color: #2D6A4F; }
+  .bc-warn { background: #FFF3CD; color: #7B5C00; }
+  .bc-off  { background: #FFE4D6; color: #8B2500; }
+
+  .score-row { display: flex; gap: 8px; }
+  .score-item { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+
+  .score-top {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.63rem;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  .score-bar { height: 5px; background: var(--border); border-radius: 4px; overflow: hidden; }
+  .score-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+  .fill-mp { background: var(--mp-mid); }
+  .fill-mm { background: var(--mm-mid); }
+
+  .empty-msg { padding: 3px 18px; font-size: 0.76rem; color: var(--muted); font-style: italic; }
+
+  @media (max-width: 480px) {
+    .week-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Tarefas da <em>Semana</em></h1>
+  <p>Toque para marcar · Segure para excluir · + para adicionar</p>
+</header>
+
+<div id="installBanner">
+  <div class="install-icon">📲</div>
+  <div class="install-text">
+    <strong>Instalar como app</strong>
+    <span>Acesse direto da tela inicial</span>
+  </div>
+  <button class="install-btn" id="installBtn">Instalar</button>
+</div>
+
+<div id="iosHint"></div>
+
+<div class="weekly-banner" id="weeklyBanner"></div>
+
+<div class="reset-row">
+  <button class="btn-reset" onclick="confirmReset()">↺ Limpar marcações da semana</button>
+</div>
+
+<div class="legend-bar">
+  <div class="legend-group">
+    <div class="legend-item"><div class="dot dot-mp"></div> MP</div>
+    <div class="legend-sep"></div>
+    <div class="legend-item"><div class="dot dot-mm"></div> MM</div>
+  </div>
+  <div class="legend-group">
+    <span class="diff-badge diff-easy">Fácil</span>
+    <span class="diff-badge diff-medium">Média</span>
+    <span class="diff-badge diff-hard">Pesada</span>
+  </div>
+</div>
+
+<div class="week-grid" id="weekGrid"></div>
+
+<script>
+// ── SERVICE WORKER ───────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
+
+// ── PWA INSTALL ──────────────────────────────────────────────
+let deferredPrompt = null;
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  const banner = document.getElementById('installBanner');
+  banner.classList.add('show');
+});
+
+document.getElementById('installBtn').addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  document.getElementById('installBanner').classList.remove('show');
+});
+
+window.addEventListener('appinstalled', () => {
+  document.getElementById('installBanner').classList.remove('show');
+});
+
+// iOS Safari hint (not supported by beforeinstallprompt)
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+if (isIOS && !isStandalone) {
+  const hint = document.getElementById('iosHint');
+  hint.innerHTML = '📲 Para instalar no iPhone: toque em <strong>Compartilhar</strong> ↗ e depois em <strong>"Adicionar à Tela de Início"</strong>';
+  hint.classList.add('show');
+}
+
+// ── HELPERS ──────────────────────────────────────────────────
+const WEIGHT = { easy: 1, medium: 2, hard: 3 };
+const STORAGE_KEY = 'tarefas-state-v2';
+
+function score(tasks, owner) {
+  return tasks.filter(t => t.owner === owner).reduce((s, t) => s + WEIGHT[t.diff], 0);
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function diffLabel(d) {
+  return d === 'easy' ? 'Fácil' : d === 'medium' ? 'Média' : 'Pesada';
+}
+
+// ── DEFAULT DATA ─────────────────────────────────────────────
+const DEFAULT_DAYS = [
+  { name: "Segunda-feira", weekend: false, tasks: [
+    { text: "Tirar lixo acumulado do fim de semana",          owner: "mp", diff: "easy" },
+    { text: "Limpeza mesa da cozinha",                        owner: "mp", diff: "medium" },
+    { text: "Louça",                                          owner: "mp", diff: "medium" },
+    { text: "Varrer/aspirar sala e escritório + pano úmido",  owner: "mp", diff: "hard" },
+    { text: "Comida das meninas à noite",                     owner: "mp", diff: "easy" },
+    { text: "Comida das meninas de dia",                      owner: "mm", diff: "easy" },
+    { text: "Varrer e limpar quintal dianteiro",              owner: "mm", diff: "hard" },
+    { text: "Varrer e passar pano 1º andar",                  owner: "mm", diff: "hard" },
+  ]},
+  { name: "Terça-feira", weekend: false, tasks: [
+    { text: "Tirar pó de móveis, objetos e eletrônicos",      owner: "mp", diff: "medium" },
+    { text: "Limpeza bancada churrasqueira",                  owner: "mp", diff: "medium" },
+    { text: "Louça",                                          owner: "mp", diff: "medium" },
+    { text: "Varrer/aspirar quarto e passar pano",            owner: "mp", diff: "medium" },
+    { text: "Comida das meninas à noite",                     owner: "mp", diff: "easy" },
+    { text: "Comida das meninas de dia",                      owner: "mm", diff: "easy" },
+    { text: "Lavar e pendurar roupa",                         owner: "mm", diff: "medium" },
+    { text: "Guardar roupa",                                  owner: "mm", diff: "easy" },
+    { text: "Lavar banheiro social",                          owner: "mm", diff: "hard" },
+  ]},
+  { name: "Quarta-feira", weekend: false, tasks: [
+    { text: "Lavar louça",                                    owner: "mp", diff: "medium" },
+    { text: "Tirar lixo",                                     owner: "mp", diff: "easy" },
+    { text: "Descartar itens vencidos da geladeira",          owner: "mp", diff: "easy" },
+    { text: "Limpar bancada churrasqueira",                   owner: "mp", diff: "hard" },
+    { text: "Compras",                                        owner: "mp", diff: "hard" },
+    { text: "Comida das meninas à noite",                     owner: "mp", diff: "easy" },
+    { text: "Comida das meninas de dia",                      owner: "mm", diff: "easy" },
+    { text: "Limpeza mesa cozinha",                           owner: "mm", diff: "medium" },
+    { text: "Varrer e passar pano 1º andar",                  owner: "mm", diff: "hard" },
+  ]},
+  { name: "Quinta-feira", weekend: false, tasks: [
+    { text: "Louça",                                          owner: "mp", diff: "medium" },
+    { text: "Limpar bancada da cozinha",                      owner: "mp", diff: "easy" },
+    { text: "Comida das meninas à noite",                     owner: "mp", diff: "easy" },
+    { text: "Comida das meninas de dia",                      owner: "mm", diff: "easy" },
+    { text: "Lavar roupa",                                    owner: "mm", diff: "medium" },
+    { text: "Organizar guarda-roupa e gavetas",               owner: "mm", diff: "easy" },
+    { text: "Limpar quintal traseiro",                        owner: "mm", diff: "hard" },
+  ]},
+  { name: "Sexta-feira", weekend: false, tasks: [
+    { text: "Lavar louças acumuladas e organizar utensílios", owner: "mp", diff: "medium" },
+    { text: "Limpeza geral da cozinha",                       owner: "mp", diff: "medium" },
+    { text: "Lavar roupa",                                    owner: "mp", diff: "medium" },
+    { text: "Limpar lixeira e tirar lixo",                    owner: "mp", diff: "easy" },
+    { text: "Comida das meninas à noite",                     owner: "mp", diff: "easy" },
+    { text: "Comida das meninas de dia",                      owner: "mm", diff: "easy" },
+    { text: "Arrumar sala e quarto",                          owner: "mm", diff: "medium" },
+    { text: "Varrer e passar pano 1º andar",                  owner: "mm", diff: "hard" },
+  ]},
+  { name: "Sábado", weekend: true, tasks: [
+    { text: "Aspirar / varrer toda a casa",                   owner: "mp", diff: "hard" },
+    { text: "Passar pano úmido geral",                        owner: "mp", diff: "hard" },
+    { text: "Lavar banheiro suíte",                           owner: "mp", diff: "medium" },
+    { text: "Regar plantas",                                  owner: "mp", diff: "easy" },
+    { text: "Comida das meninas à noite",                     owner: "mp", diff: "easy" },
+    { text: "Comida das meninas de dia",                      owner: "mm", diff: "easy" },
+    { text: "Varrer e passar pano no quarto",                 owner: "mm", diff: "medium" },
+    { text: "Limpeza bancada churrasqueira",                  owner: "mm", diff: "medium" },
+    { text: "Limpeza mesa cozinha",                           owner: "mm", diff: "medium" },
+    { text: "Organizar objetos espalhados",                   owner: "mm", diff: "easy" },
+    { text: "Limpar geladeira",                               owner: "mm", diff: "hard" },
+  ]},
+  { name: "Domingo", weekend: true, tasks: [
+    { text: "Compras semanais",                               owner: "mp", diff: "hard" },
+    { text: "Trocar toalhas de banho e rosto",                owner: "mp", diff: "easy" },
+    { text: "Comida das meninas à noite",                     owner: "mp", diff: "easy" },
+    { text: "Comida das meninas de dia",                      owner: "mm", diff: "easy" },
+    { text: "Lavar banheiro suíte",                           owner: "mm", diff: "hard" },
+    { text: "Louça",                                          owner: "mm", diff: "medium" },
+    { text: "Trocar roupa de cama",                           owner: "mm", diff: "easy" },
+    { text: "Verificar estoques e planejar compras",          owner: "mm", diff: "medium" },
+    { text: "Avaliar e ajustar próxima semana",               owner: "mm", diff: "easy" },
+  ]},
+];
+
+// ── STATE — load from localStorage or use defaults ───────────
+let idCounter = 0;
+
+function loadState() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // find highest id
+      parsed.forEach(d => d.tasks.forEach(t => { if (t.id > idCounter) idCounter = t.id; }));
+      return parsed;
+    }
+  } catch(e) {}
+  // assign IDs to defaults
+  const days = JSON.parse(JSON.stringify(DEFAULT_DAYS));
+  days.forEach(d => d.tasks.forEach(t => { t.id = ++idCounter; t.done = false; }));
+  return days;
+}
+
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(daysData)); } catch(e) {}
+}
+
+const daysData = loadState();
+
+const formOwner = {};
+const formDiff  = {};
+
+// long-press for delete on mobile
+let pressTimer = null;
+
+// ── WEEKLY BANNER ────────────────────────────────────────────
+function renderBanner() {
+  const all = daysData.flatMap(d => d.tasks);
+  const mpTotal = score(all, 'mp');
+  const mmTotal = score(all, 'mm');
+  const diff = Math.abs(mpTotal - mmTotal);
+  const txt  = diff <= 3 ? '✓ Semana equilibrada!' : diff <= 6 ? '~ Quase igual' : '! Verificar equilíbrio';
+  const cls  = diff <= 3 ? 'bal-ok' : diff <= 6 ? 'bal-warn' : 'bal-off';
+  document.getElementById('weeklyBanner').innerHTML = `
+    <div class="weekly-card">
+      <div class="wc-label">Equilíbrio da semana</div>
+      <div class="wc-score ${cls}">${txt}</div>
+    </div>`;
+}
+
+// ── RENDER ───────────────────────────────────────────────────
+function render() {
+  renderBanner();
+  document.getElementById('weekGrid').innerHTML = daysData.map((d, i) => renderDay(d, i)).join('');
+}
+
+function renderDay(day, di) {
+  const mpScore = score(day.tasks, 'mp');
+  const mmScore = score(day.tasks, 'mm');
+  const total   = mpScore + mmScore || 1;
+  const mpPct   = Math.round((mpScore / total) * 100);
+  const mmPct   = 100 - mpPct;
+  const mpTasks = day.tasks.filter(t => t.owner === 'mp');
+  const mmTasks = day.tasks.filter(t => t.owner === 'mm');
+  const diff    = Math.abs(mpScore - mmScore);
+  const bc = diff <= 2 ? 'bc-ok' : diff <= 4 ? 'bc-warn' : 'bc-off';
+  const bl = diff <= 2 ? '✓ Equilibrado' : diff <= 4 ? '~ Próximo' : '! Desigual';
+  const owner = formOwner[di] || 'mp';
+  const dif   = formDiff[di]  || 'easy';
+
+  const taskRow = t => `
+    <div class="task-item ${t.owner}${t.done ? ' done' : ''}" id="task-${t.id}"
+      onclick="toggleTask(${t.id})"
+      oncontextmenu="ctxDelete(event,${di},${t.id})"
+      ontouchstart="startPress(${di},${t.id})"
+      ontouchend="cancelPress()"
+      ontouchmove="cancelPress()">
+      <div class="task-check">✓</div>
+      <div class="task-content">
+        <div class="task-text">${esc(t.text)}</div>
+        <div class="task-meta">
+          <span class="task-owner">${t.owner.toUpperCase()}</span>
+          <span class="diff-badge diff-${t.diff}">${diffLabel(t.diff)}</span>
+        </div>
+      </div>
+      <button class="btn-delete" onclick="event.stopPropagation();deleteTask(${di},${t.id})" title="Excluir">×</button>
+    </div>`;
+
+  return `
+    <div class="day-card">
+      <div class="day-header">
+        <div class="day-name">${day.name}${day.weekend ? '<span class="weekend-badge">FDS</span>' : ''}</div>
+        <div class="day-pills">
+          <span class="count-pill pill-mp">MP ${mpScore}pts</span>
+          <span class="count-pill pill-mm">MM ${mmScore}pts</span>
+        </div>
+      </div>
+
+      <div class="tasks-list">
+        <div class="section-label">MP</div>
+        ${mpTasks.length ? mpTasks.map(taskRow).join('') : '<div class="empty-msg">Nenhuma tarefa</div>'}
+        <div class="divider"></div>
+        <div class="section-label">MM</div>
+        ${mmTasks.length ? mmTasks.map(taskRow).join('') : '<div class="empty-msg">Nenhuma tarefa</div>'}
+      </div>
+
+      <div class="add-task-row">
+        <button class="btn-add-toggle" onclick="toggleForm(${di})">
+          <span class="plus">+</span> Adicionar tarefa
+        </button>
+      </div>
+
+      <div class="add-form" id="form-${di}">
+        <input type="text" id="input-${di}" placeholder="Nome da tarefa…" onkeydown="handleKey(event,${di})" />
+        <div class="add-form-row">
+          <div class="owner-select">
+            <button class="owner-btn mp${owner==='mp'?' selected':''}" id="obtn-mp-${di}" onclick="selectOwner(${di},'mp')">MP</button>
+            <button class="owner-btn mm${owner==='mm'?' selected':''}" id="obtn-mm-${di}" onclick="selectOwner(${di},'mm')">MM</button>
+          </div>
+          <div class="diff-select">
+            <button class="diff-btn easy${dif==='easy'?' selected':''}"     id="dbtn-easy-${di}"   onclick="selectDiff(${di},'easy')">Fácil</button>
+            <button class="diff-btn medium${dif==='medium'?' selected':''}" id="dbtn-medium-${di}" onclick="selectDiff(${di},'medium')">Média</button>
+            <button class="diff-btn hard${dif==='hard'?' selected':''}"     id="dbtn-hard-${di}"   onclick="selectDiff(${di},'hard')">Pesada</button>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn-cancel" onclick="closeForm(${di})">Cancelar</button>
+          <button class="btn-confirm" onclick="addTask(${di})">Adicionar</button>
+        </div>
+      </div>
+
+      <div class="day-footer">
+        <div class="balance-row">
+          <span class="balance-label">Peso do dia</span>
+          <span class="balance-chip ${bc}">${bl}</span>
+        </div>
+        <div class="score-row">
+          <div class="score-item">
+            <div class="score-top"><span>MP</span><span>${mpScore}pts</span></div>
+            <div class="score-bar"><div class="score-fill fill-mp" style="width:${mpPct}%"></div></div>
+          </div>
+          <div class="score-item">
+            <div class="score-top"><span>MM</span><span>${mmScore}pts</span></div>
+            <div class="score-bar"><div class="score-fill fill-mm" style="width:${mmPct}%"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function reRenderDay(di) {
+  const cards = document.getElementById('weekGrid').querySelectorAll('.day-card');
+  const tmp = document.createElement('div');
+  tmp.innerHTML = renderDay(daysData[di], di);
+  cards[di].replaceWith(tmp.firstElementChild);
+  renderBanner();
+  saveState();
+}
+
+// ── ACTIONS ──────────────────────────────────────────────────
+function toggleTask(id) {
+  let di = -1;
+  daysData.forEach((d, i) => {
+    const t = d.tasks.find(x => x.id === id);
+    if (t) { t.done = !t.done; di = i; }
+  });
+  const el = document.getElementById('task-' + id);
+  if (el) el.classList.toggle('done');
+  saveState();
+}
+
+function deleteTask(di, id) {
+  const el = document.getElementById('task-' + id);
+  if (!el) return;
+  el.style.transition = 'opacity 0.18s, transform 0.18s';
+  el.style.opacity = '0';
+  el.style.transform = 'translateX(10px)';
+  setTimeout(() => {
+    daysData[di].tasks = daysData[di].tasks.filter(t => t.id !== id);
+    reRenderDay(di);
+  }, 190);
+}
+
+// right-click (desktop) delete
+function ctxDelete(e, di, id) {
+  e.preventDefault();
+  if (confirm('Excluir esta tarefa?')) deleteTask(di, id);
+}
+
+// long-press (mobile) delete
+function startPress(di, id) {
+  cancelPress();
+  pressTimer = setTimeout(() => {
+    if (confirm('Excluir esta tarefa?')) deleteTask(di, id);
+  }, 600);
+}
+
+function cancelPress() {
+  clearTimeout(pressTimer);
+  pressTimer = null;
+}
+
+function toggleForm(di) {
+  const form = document.getElementById('form-' + di);
+  if (form.classList.contains('open')) { closeForm(di); return; }
+  form.classList.add('open');
+  if (!formOwner[di]) formOwner[di] = 'mp';
+  if (!formDiff[di])  formDiff[di]  = 'easy';
+  setTimeout(() => { const inp = document.getElementById('input-' + di); if (inp) inp.focus(); }, 60);
+}
+
+function closeForm(di) {
+  const f = document.getElementById('form-' + di);
+  if (f) f.classList.remove('open');
+  const inp = document.getElementById('input-' + di);
+  if (inp) inp.value = '';
+}
+
+function selectOwner(di, owner) {
+  formOwner[di] = owner;
+  ['mp','mm'].forEach(o => {
+    const b = document.getElementById('obtn-' + o + '-' + di);
+    if (b) b.classList.toggle('selected', o === owner);
+  });
+}
+
+function selectDiff(di, d) {
+  formDiff[di] = d;
+  ['easy','medium','hard'].forEach(x => {
+    const b = document.getElementById('dbtn-' + x + '-' + di);
+    if (b) b.classList.toggle('selected', x === d);
+  });
+}
+
+function addTask(di) {
+  const inp = document.getElementById('input-' + di);
+  const text = inp ? inp.value.trim() : '';
+  if (!text) { if (inp) inp.focus(); return; }
+  daysData[di].tasks.push({ id: ++idCounter, text, owner: formOwner[di]||'mp', diff: formDiff[di]||'easy', done: false });
+  closeForm(di);
+  reRenderDay(di);
+}
+
+function handleKey(e, di) {
+  if (e.key === 'Enter')  addTask(di);
+  if (e.key === 'Escape') closeForm(di);
+}
+
+function confirmReset() {
+  if (confirm('Limpar todas as marcações desta semana?')) {
+    daysData.forEach(d => d.tasks.forEach(t => t.done = false));
+    saveState();
+    render();
+  }
+}
+
+render();
+</script>
+</body>
+</html>
